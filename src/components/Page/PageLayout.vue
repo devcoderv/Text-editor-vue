@@ -1,55 +1,56 @@
 <script>
 import PageSize from './PageSize.vue'
+import PageMargin from './PageMargin.vue'
 export default {
-  components: { PageSize },
+  components: { PageSize, PageMargin },
 
     data(){
         return {
+            id: null,
             index: 0,
             padding: [0,0,0,0],
-            page: [0,0]
+            orientation: '',
+            page: [0,0],
+            typePage: undefined,
+            pageOrientation: null,
+            options: [
+                { value: 'Vertical', text: 'Vertical' },
+                { value: 'Horizontal', text: 'Horizontal' },
+            ]
         }
     },
 
-    computed: {
-        sizePage(){
-            const height = this.page[1] * 12.5 / 100
-            const width = this.page[0] * 12.5 / 100
-
-            return {
-                height: height + 'px',
-                width: width + 'px'
-            }
+    watch: {
+        padding(){
+            this.onChangeMargin()
         }
-    },
-
-    watch:{
-        // padding(value){
-        //     console.log(value);
-        //     this.$eventBus.$emit('setPadding', {value})
-        // }
     },
 
     created() {
 
         this.$eventBus.$on('pageLayout', (item) => {
-            const { index,padding, size } = {...item}
+            const { id, index,padding, size, orientation, typePage } = {...item}
             this.index = index +1
             this.padding = padding
             this.page = size
+            this.typePage = typePage
+            this.pageOrientation =  orientation
+            this.id = id
         })
 
     },
 
     methods: {
-        onlyNumber(evt) {
-            evt = (evt) ? evt : window.event;
-            const charCode = (evt.which) ? evt.which : evt.keyCode;
-            if ((charCode > 31 && (charCode < 48 || charCode > 57)) && charCode !== 46) {
-                evt.preventDefault();
-            } else {
-                return true;
-            }
+        onChange(){
+            this.$eventBus.$emit('changeOrientation', {id: this.id, orientation: this.pageOrientation})
+        },
+        onChangePage(size){
+            this.$eventBus.$emit('changePageSize',  {id: this.id, typePage: this.typePage, size})
+            // this.$eventBus.$emit('changeOrientation', {id: this.id, orientation: this.pageOrientation})
+        },
+
+        onChangeMargin(){
+            this.$eventBus.$emit('changeMarginPage',  {id: this.id, padding: this.padding})
         }
     }
     
@@ -58,34 +59,19 @@ export default {
 
 <template>
 <div>
-    <PageSize />
+    <PageSize v-model="typePage" @change:page="onChangePage"/>
 
-    <p>Margenes</p>
-    <div class="d-flex align-items-center justify-content-center">
-        <div>
-            <input v-model.number="padding[3]" type="text" placeholder="in" @keypress="onlyNumber">
-        </div>
-        <div class="d-flex flex-column align-items-center px-2">
-            <input v-model.number="padding[0]" type="text" placeholder="in" @keypress="onlyNumber">
-            <div class="miniPage my-2" :style="{...sizePage}"></div>
-            <input v-model.number="padding[2]" type="text" placeholder="in" @keypress="onlyNumber">
-        </div>
-        <div>
-            <input v-model.number="padding[1]" type="text" placeholder="in" @keypress="onlyNumber">
-
-        </div>
-    </div>
-    
+     <b-form-group label="Orientación">
+         <b-form-select 
+         v-model="pageOrientation"
+                :options="options"
+                @change="onChange"
+        />
+    </b-form-group>
+    <PageMargin v-model="padding" :size="page" />
+   
 </div>
 </template>
 
 <style scoped>
-input {
-    width: 40px;
-}
-
-.miniPage {
-    border: 1px solid #00000025;
-    background: #ffffff;
-} 
 </style>

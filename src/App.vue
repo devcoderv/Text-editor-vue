@@ -64,14 +64,15 @@ body{
 
 .borrar-clase{
  margin-left: 280px;
- margin-top: calc(135px + 60px);
+ margin-top: calc(135px + 95px);
  background: #f1f4f6;
 }
 
 .app-content {
     display: flex;
-    height: calc(100vh - calc(135px + 60px));
+    height: calc(100vh - calc(135px + 95px));
     gap: 1rem;
+    // overflow: hidden;
 }
 .fik-editor{
     flex: 1;
@@ -80,6 +81,7 @@ body{
 
 .type-content {
     width: 300px;
+    overflow-y: scroll;
     // background: red;
 }
 </style>

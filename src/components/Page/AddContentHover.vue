@@ -3,6 +3,14 @@ import { excel, image, textBox, video } from "../../helpers/type-content"
 
 export default {
 
+    props: {
+        hover: {
+            type: Boolean,
+            required:false,
+            default: true
+        }
+    },
+
     data(){
         return {
             element: {
@@ -28,8 +36,8 @@ export default {
          * @description Metodo pare crear nuevo elemento en pagina
          */
         onClickOption(element){
-            console.log('glo', this.element[element]);
             this.$eventBus.$emit('addElement', {...this.element[element] } )
+            this.$emit('click:option')
         }
     }
     
@@ -37,7 +45,7 @@ export default {
 </script>
 
 <template>
-<div class="addContentWrapper">
+<div :class="{'addContentWrapper': hover}">
     <div class="addContent bg-info">
        <b-dropdown class="dropdown-menu-page"  variant="light" size="sm">
             <template #button-content>

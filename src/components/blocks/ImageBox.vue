@@ -37,6 +37,7 @@ export default {
         loadFile(e){
             console.log(e);
             this.picture = e
+            this.$eventBus.$emit('uploadImage')
         }
     }
 

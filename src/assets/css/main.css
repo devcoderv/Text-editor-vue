@@ -1,0 +1,36 @@
+.absolute{
+    position: absolute;
+}
+.relative {
+    position: relative;
+}
+
+.w-full {
+    width: 100%;
+}
+
+.overflow-hidden {
+    overflow: hidden;
+}
+
+.current-page .page-wrapper{
+    box-shadow: 0px 0px 12px 17px rgba(153, 0, 204, .25);
+}
+
+
+/* .page {
+
+    display: flex;
+    flex-direction: column;
+    position: relative;
+
+}
+
+.pageContent {
+    
+    flex: 1 1 auto;
+}
+.page-wrapper{
+    display: flex;
+    justify-content: center;
+} */

@@ -1,27 +1,28 @@
 
 
 <script>
-import { calculeSizePage } from "../utils/page";
+import { calculeSizePage, clonePage } from "../utils/page";
 import { scrollDirection } from "../utils/scroll";
 import BarOptions from './BarOptions.vue'
 import Page from './Page/Page.vue'
 import PageOptions from './Page/PageOptions.vue'
+import PreviewDocument from "./PreviewDocument.vue";
 export default {
-  components: { BarOptions, Page, PageOptions },
+  components: { BarOptions, Page, PageOptions, PreviewDocument },
 
   data(){
       return{
         //   padding: [0.68,0.68,0.68,0.68],
             loading: false,
-          typePage: 'Letter',
-          pageActive: 1,
-          typeScroll: 'down',
-          currentTop:0,
-          maxWidth: 'auto',
-          zoom: 1,
-          pages: [],
-          height: 0,
-          heightC: 0
+            typePage: 'A4',
+            pageActive: 1,
+            typeScroll: 'down',
+            currentTop:0,
+            maxWidth: 'auto',
+            zoom: 1,
+            pages: [],
+            height: 0,
+            heightC: 0
       }
   },
 
@@ -45,10 +46,19 @@ export default {
                     transform: `scale(${this.zoom})`,
                     transformOrigin: document < scale ? 'left top' : 'center top',
                     height: this.height + 'px',
-                    width: calculeSizePage(this.typePage)[0] + 'px'
+                    // width: calculeSizePage(this.typePage)[0] + 'px'
                 }
           }
           return {}
+      },
+
+      hola() {
+          
+          return  this.loading && this.$refs.page.map((e) => e.offsetHeight)
+      },
+
+      preview() {
+          return this.pages.map(page => page.innerHTML)
       }
   },
 
@@ -59,6 +69,10 @@ export default {
 
         zoom() {
             this.zoomDocument()
+        },
+
+        hola(value){
+            console.log(value);
         }
     },
   
@@ -69,12 +83,17 @@ export default {
 
   mounted(){
         this.maxWidth = `${this.$refs.editorWrapper.offsetWidth}px`
-
-        console.log(this.$refs.page[0].sc);
-
         this.$eventBus.$on('zoom', (value) => {
             this.zoom = value
-            
+        })
+
+         this.$eventBus.$on('changeOrientation',() => {
+             this.$nextTick(() => {
+                 const a = this.$refs.page.map((e) => e.offsetHeight)
+                  this.heightC = a.reduce((a,b) => a+b,0)
+                  this.zoomDocument()
+
+             })
         })
 
         /***
@@ -86,11 +105,9 @@ export default {
             value.id = Date.now()
             this.pages[this.pageActive-1].body.push(value)
         })
-         this.$eventBus.$on('changeBackground',({index, color, image}) => {
-                color ? this.pages[index].background.color = color : this.pages[index].background.image = image
-            })
         this.loading = true
-        this.heightC = this.$refs.scale.offsetHeight
+        const a = this.$refs.page.map((e) => e.offsetHeight)
+        this.heightC = a.reduce((a,b) => a+b,0)
   },
 
   methods: {
@@ -99,10 +116,19 @@ export default {
          *              crear el commponentes
          */
         initialize() {
-            this.$eventBus.$on('addPage',(value) => (this.addPage(value)))
-            this.$eventBus.$on('changePageSize',(value) => (this.pageSizes = value))
+            this.$eventBus.$on('addPage',(value) => {
+                this.addPage(value)
+                this.$nextTick(() => {
+                    const a = this.$refs.page.map((e) => e.offsetHeight)
+                    this.heightC = a.reduce((a,b) => a+b,0)
+                    this.zoomDocument()
+
+                })
+            })
+            // this.$eventBus.$on('changePageSize',(value) => (this.pageSizes = value))
            
             this.addPage(0)
+            
         },
 
         /***
@@ -113,31 +139,23 @@ export default {
         addPage(index, data) {
             const size =  calculeSizePage(this.typePage)
             const page = data || {
-                id: this.pages.length + 1,
+                id: Date.now(),
                 padding: [0.68,0.68,0.68,0.68],
                 pageSize: size,
-                typePage: 'Letter',
+                typePage: 'A4',
+                orientation: 'Vertical',
                 background: {
                     color: '#ffffff',
                     image: undefined
                 },
-                body: [
-                    { 
-                    id: Date.now(),
-                    icon: "img",
-                    name:'Imagen', 
-                    render: 'ImageBox',
-                    value: '', 
-                    props: {
-                        src: undefined
-                    }}
-                ],
+                body: [],
                 header: [],
                 footer:[],
-                innerHtml: ''
+                innerHTML: ''
             }
             // console.log(index);
             this.pages.splice(index, 0, page )
+            
         },
 
          /***
@@ -147,8 +165,20 @@ export default {
             const page = this.pages[index]
             this.$eventBus.$emit('sibebarActive', 'PageProperties')
             this.$nextTick(() => {
-                this.$eventBus.$emit('pageLayout', { index, padding:page.padding, size:page.pageSize })
-                this.$eventBus.$emit('PageProperties', { index, color: page.color })
+                this.$eventBus.$emit('pageLayout', { 
+                    id: page.id, 
+                    index, 
+                    padding:page.padding, 
+                    orientation: page.orientation, 
+                    typePage: page.typePage ,
+                    size: page.pageSize 
+                })
+
+                this.$eventBus.$emit('PageProperties', { 
+                    id: page.id, 
+                    index, 
+                    background: page.background 
+                })
             })
 
         },
@@ -156,15 +186,15 @@ export default {
         /***
          * @description Metodo permiter clonar un pagina con su configuracion segun el
          */
-        onClickClone(page){
-            const newArray = []
-            const clone = {...this.pages[page - 1]}
-            clone.padding.forEach(element => {
-                newArray.push(element)
-            });
-            delete clone.padding
-            clone.padding = newArray
-            this.addPage(page, {...clone})
+        onClickClone(index){
+            const pageClone = clonePage(index, this.pages)
+            this.addPage(index + 1, {...pageClone})
+            this.$nextTick(() => {
+                const a = this.$refs.page.map((e) => e.offsetHeight)
+            this.heightC = a.reduce((a,b) => a+b,0)
+            this.zoomDocument()
+
+            })
         },
 
          /***
@@ -203,10 +233,10 @@ export default {
 
         zoomDocument(){
             if(this.zoom > 1) {
-                this.height = ((this.heightC * this.countPages)  + ((this.countPages * 24)))
+                this.height = ((this.heightC )  + ((this.countPages * 24)))
                 return
             }
-            this.height = ((this.heightC * this.countPages)  + ((this.countPages - 1)  * 24)) * this.zoom
+            this.height = ((this.heightC )  + ((this.countPages - 1)  * 24)) * this.zoom
         },
 
         previusPage() {
@@ -229,22 +259,24 @@ export default {
 }
 </script>
 <template>
-    <section ref="editorWrapper" class="d-flex flex-column bg-editor" :style="editorStyle">
+    <section ref="editorWrapper" class="d-flex flex-column bg-editor relative overflow-hidden" :style="editorStyle">
+
         <BarOptions :pages="countPages"  :pageActive="pageActive" @click:nextPage="nextPage" @click:previusPage="previusPage"/>    
         
         <div ref="document" class="p-4" style="overflow:auto" @scroll="scrollDocument">
             <div ref="scale" class="mb-4 mx-auto" :style="scale">
                 <div ref="page" v-for="(page,i) in pages" :key="i" class="mb-4">
 
-                    <PageOptions :page="i+1"  @click:config="onClickConfig" @click:clone="onClickClone" :style="{width: `${page.pageSize[0] }px`,}"/>
-                    <Page :padding="page.padding" :size="page.pageSize" :bg="page.background" :header="''" :body="page.body" :footer="''"/>
+                    <PageOptions :id="page.id" :page="i+1"  @click:config="onClickConfig" @click:clone="onClickClone" :style="{width: `${page.pageSize[0] }px`,}"/>
+                    <Page v-model="pages[i]" />
                 
                 </div>
-
             </div>
         </div>
     
+        <PreviewDocument :document="pages" :currentPage="pageActive"/>
     </section>
+
 </template>
 
 <style>

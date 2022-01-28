@@ -2,6 +2,11 @@
 export default {
 
     props: {
+        id: {
+            type: Number,
+            required: true,
+            default: 0
+        },
         page:{
             type: Number,
             required:true,
@@ -36,7 +41,7 @@ export default {
             this.$emit('click:config', page - 1)
         },
         onClickClone(page) {
-            this.$emit('click:clone', page)
+            this.$emit('click:clone', page - 1)
         },
         addPage(type){
             this.$eventBus.$emit("addPage", this.page + type)
